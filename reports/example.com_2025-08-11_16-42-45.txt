@@ -1,0 +1,25 @@
+DETECTIVE JOE INVESTIGATION REPORT
+=======================================
+Investigation Type: Website Investigation
+Target: example.com
+Date: 2025-08-11 16:42:45
+=======================================
+
+\n[1] WHOIS\n==================================================\n\nSTDERR:\n/bin/sh: 1: whois: not found
+\n\n\n[2] DNSRECON\n==================================================\n\nSTDERR:\n/bin/sh: 1: dnsrecon: not found
+\n\n\n[3] DIG\n==================================================\n;; Connection to 127.0.0.53#53(127.0.0.53) for example.com failed: connection refused.
+;; no servers could be reached
+;; Connection to 127.0.0.53#53(127.0.0.53) for example.com failed: connection refused.
+;; no servers could be reached
+;; Connection to 127.0.0.53#53(127.0.0.53) for example.com failed: connection refused.
+;; no servers could be reached
+\n\n\n[4] THEHARVESTER\n==================================================\n\nSTDERR:\n/bin/sh: 1: theHarvester: not found
+\n\n\n[5] SUBLIST3R\n==================================================\n\nSTDERR:\n/bin/sh: 1: sublist3r: not found
+\n\n\n[6] AMASS\n==================================================\n\nSTDERR:\n/bin/sh: 1: amass: not found
+\n\n\n[7] WAFW00F\n==================================================\n\nSTDERR:\n/bin/sh: 1: wafw00f: not found
+\n\n\n[8] WHATWEB\n==================================================\n\nSTDERR:\n/bin/sh: 1: whatweb: not found
+\n\n\n[9] NIKTO\n==================================================\n\nSTDERR:\n/bin/sh: 1: nikto: not found
+\n\n\n[10] DIRB\n==================================================\n\nSTDERR:\n/bin/sh: 1: dirb: not found
+\n\n\n[11] SSLSCAN\n==================================================\n\nSTDERR:\n/bin/sh: 1: sslscan: not found
+\n\n\n[12] NMAP\n==================================================\n\nSTDERR:\n/bin/sh: 1: nmap: not found
+\n\n
