@@ -1,0 +1,121 @@
+DETECTIVE JOE INVESTIGATION REPORT
+=======================================
+Investigation Type: Website Investigation
+Target: example.com
+Date: 2025-08-11 16:48:00
+=======================================
+
+
+[1] WHOIS
+==================================================
+
+STDERR:
+/bin/sh: 1: whois: not found
+
+
+
+[2] DNSRECON
+==================================================
+
+STDERR:
+/bin/sh: 1: dnsrecon: not found
+
+
+
+[3] DIG
+==================================================
+;; Connection to 127.0.0.53#53(127.0.0.53) for example.com failed: connection refused.
+;; no servers could be reached
+;; Connection to 127.0.0.53#53(127.0.0.53) for example.com failed: connection refused.
+;; no servers could be reached
+;; Connection to 127.0.0.53#53(127.0.0.53) for example.com failed: connection refused.
+;; no servers could be reached
+
+
+
+[4] DNS A RECORD
+==================================================
+No output from DNS A Record
+
+
+[5] DNS MX RECORD
+==================================================
+No output from DNS MX Record
+
+
+[6] DNS NS RECORD
+==================================================
+No output from DNS NS Record
+
+
+[7] THEHARVESTER
+==================================================
+
+STDERR:
+/bin/sh: 1: theHarvester: not found
+
+
+
+[8] SUBLIST3R
+==================================================
+
+STDERR:
+/bin/sh: 1: sublist3r: not found
+
+
+
+[9] AMASS
+==================================================
+
+STDERR:
+/bin/sh: 1: amass: not found
+
+
+
+[10] WAFW00F
+==================================================
+
+STDERR:
+/bin/sh: 1: wafw00f: not found
+
+
+
+[11] WHATWEB
+==================================================
+
+STDERR:
+/bin/sh: 1: whatweb: not found
+
+
+
+[12] NIKTO
+==================================================
+
+STDERR:
+/bin/sh: 1: nikto: not found
+
+
+
+[13] DIRB
+==================================================
+
+STDERR:
+/bin/sh: 1: dirb: not found
+
+
+
+[14] SSLSCAN
+==================================================
+
+STDERR:
+/bin/sh: 1: sslscan: not found
+
+
+
+[15] NMAP
+==================================================
+
+STDERR:
+/bin/sh: 1: nmap: not found
+
+
