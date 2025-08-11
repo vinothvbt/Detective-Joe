@@ -83,16 +83,16 @@ class DetectiveJoe:
         
         return target
     
-    def check_tool_availability(self, tool_name):
+    def check_tool_availability(self, cmd):
         """Check if a tool is available on the system."""
         # Extract the actual command from the tool name
-        cmd_parts = tool_name.split()
+        cmd_parts = cmd.split()
         if cmd_parts:
             tool_binary = cmd_parts[0]
             
             # Special cases for complex commands
-            if tool_binary == "curl":
-                return shutil.which("curl") is not None
+            if tool_binary in ["curl", "echo", "grep", "jq", "sort"]:
+                return shutil.which(tool_binary) is not None
             elif tool_binary == "echo":
                 return True  # echo is always available
             
@@ -114,7 +114,7 @@ class DetectiveJoe:
         
         # Skip optional tools that aren't available
         if tool_binary.lower() in OPTIONAL_TOOLS and not self.check_tool_availability(cmd):
-            return f"[SKIPPED] {tool_name} - Tool not available on this system\\n"
+            return f"[SKIPPED] {tool_name} - Tool not available on this system\n"
         
         try:
             # Execute the command with timeout
@@ -130,10 +130,11 @@ class DetectiveJoe:
             output = ""
             if result.stdout:
                 output += result.stdout
-            if result.stderr:
-                output += f"\\nSTDERR:\\n{result.stderr}"
+            if result.stderr and result.returncode != 0:
+                # Only include stderr if the command actually failed
+                output += f"\nSTDERR:\n{result.stderr}"
             
-            if result.returncode != 0 and not output:
+            if result.returncode != 0 and not output.strip():
                 output = f"Command failed with return code {result.returncode}"
             
             return output if output.strip() else f"No output from {tool_name}"
@@ -170,7 +171,7 @@ class DetectiveJoe:
         type_name = type_info['name']
         tools_key = type_info['key']
         
-        print(f"\\n[*] Starting {type_name} for target: {target}")
+        print(f"\n[*] Starting {type_name} for target: {target}")
         print("=" * 60)
         
         # Get tools for this investigation type
@@ -195,12 +196,12 @@ Date: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
             tool_name = tool_config['name']
             
             # Add tool section to report
-            report_content += f"\\n[{i}] {tool_name.upper()}\\n"
-            report_content += "=" * 50 + "\\n"
+            report_content += f"\n[{i}] {tool_name.upper()}\n"
+            report_content += "=" * 50 + "\n"
             
             # Execute tool and capture output
             output = self.execute_tool(tool_config, target)
-            report_content += output + "\\n\\n"
+            report_content += output + "\n\n"
             
             # Print progress
             print(f"[✓] {tool_name} completed")
@@ -210,10 +211,10 @@ Date: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         report_path = self.save_report(report_content, filename)
         
         if report_path:
-            print(f"\\n[✓] Investigation completed!")
+            print(f"\n[✓] Investigation completed!")
             print(f"[✓] Report saved: {report_path}")
         else:
-            print("\\n[!] Investigation completed but failed to save report.")
+            print("\n[!] Investigation completed but failed to save report.")
     
     def run(self):
         """Main run loop for Detective Joe."""
@@ -228,16 +229,16 @@ Date: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
                 self.run_investigation(choice, target)
                 
                 # Ask if user wants to continue
-                continue_choice = input("\\nRun another investigation? (y/n): ").strip().lower()
+                continue_choice = input("\nRun another investigation? (y/n): ").strip().lower()
                 if continue_choice not in ['y', 'yes']:
-                    print("\\nGoodbye!")
+                    print("\nGoodbye!")
                     break
                     
         except KeyboardInterrupt:
-            print("\\n\\nOperation cancelled by user. Goodbye!")
+            print("\n\nOperation cancelled by user. Goodbye!")
             sys.exit(0)
         except Exception as e:
-            print(f"\\nUnexpected error: {e}")
+            print(f"\nUnexpected error: {e}")
             sys.exit(1)
 
 def main():

@@ -11,6 +11,9 @@ TOOLS = {
         {"name": "Whois", "cmd": "whois {target}"},
         {"name": "DNSRecon", "cmd": "dnsrecon -d {target}"},
         {"name": "Dig", "cmd": "dig {target} ANY +noall +answer"},
+        {"name": "DNS A Record", "cmd": "dig {target} A +short"},
+        {"name": "DNS MX Record", "cmd": "dig {target} MX +short"},
+        {"name": "DNS NS Record", "cmd": "dig {target} NS +short"},
         {"name": "TheHarvester", "cmd": "theHarvester -d {target} -b all"},
         {"name": "Sublist3r", "cmd": "sublist3r -d {target}"},
         {"name": "Amass", "cmd": "amass enum -d {target}"},
@@ -49,6 +52,7 @@ TOOLS = {
         {"name": "SSLScan", "cmd": "sslscan {target}"},
         {"name": "WhatWeb", "cmd": "whatweb {target}"},
         {"name": "Traceroute", "cmd": "traceroute {target}"},
+        {"name": "Ping Test", "cmd": "ping -c 4 {target}"},
         {"name": "Hping3", "cmd": "hping3 -c 5 {target}"},
         {"name": "Reverse DNS", "cmd": "dig -x {target}"},
         {"name": "Port Scan", "cmd": "nmap -sS -O {target}"}
