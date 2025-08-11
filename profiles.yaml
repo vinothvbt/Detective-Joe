@@ -1,0 +1,10 @@
+
+profiles:
+  test:
+    name: "Test Profile"
+    timeout: 10
+    parallel_workers: 1
+    enabled_categories: ["website"]
+    tools:
+      website: ["nmap"]
+default_profile: "test"
