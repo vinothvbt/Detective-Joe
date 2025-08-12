@@ -1,0 +1,41 @@
+name: "nmap"
+version: "1.0"
+description: "Network scanning plugin using Nmap for port discovery and service detection"
+author: "Detective Joe Team"
+tool_name: "nmap"
+required_tools:
+  - "nmap"
+categories:
+  - "website"
+  - "organisation" 
+  - "ip_server"
+plugin_class: "NmapPlugin"
+module_path: "nmap_plugin"
+settings:
+  default_timeout: 120
+  scan_types:
+    - "basic"
+    - "default"
+    - "aggressive"
+  timing_templates:
+    - "T1"
+    - "T2"
+    - "T3"
+    - "T4"
+    - "T5"
+artifacts:
+  produces:
+    - "hosts"
+    - "open_ports"
+    - "services"
+    - "os_info"
+  consumes:
+    - "domains"
+    - "ips"
+    - "hostnames"
+chain_priority: 2
+tags:
+  - "network"
+  - "ports"
+  - "services"
+  - "recon"

@@ -1,10 +1,87 @@
 
 profiles:
-  test:
-    name: "Test Profile"
-    timeout: 10
-    parallel_workers: 1
-    enabled_categories: ["website"]
+  quick:
+    name: "Quick Scan"
+    description: "Fast reconnaissance with basic tools"
+    timeout: 60
+    parallel_workers: 3
+    scan_depth: 1
+    aggressiveness: "low"
+    enable_chaining: false
+    anonymity:
+      use_tor: false
+      use_proxy: false
+      user_agent_rotation: false
+    enabled_categories: ["website", "ip_server"]
     tools:
       website: ["nmap"]
-default_profile: "test"
+      ip_server: ["nmap"]
+      
+  standard:
+    name: "Standard Scan"
+    description: "Balanced reconnaissance with core tools"
+    timeout: 120
+    parallel_workers: 4
+    scan_depth: 2
+    aggressiveness: "medium"
+    enable_chaining: true
+    anonymity:
+      use_tor: false
+      use_proxy: false
+      user_agent_rotation: true
+    enabled_categories: ["website", "organisation", "ip_server"]
+    tools:
+      website: ["nmap", "theharvester"]
+      organisation: ["theharvester", "nmap"]
+      ip_server: ["nmap"]
+      
+  deep:
+    name: "Deep Scan"
+    description: "Comprehensive reconnaissance with all available tools"
+    timeout: 300
+    parallel_workers: 6
+    scan_depth: 3
+    aggressiveness: "high"
+    enable_chaining: true
+    anonymity:
+      use_tor: false
+      use_proxy: true
+      proxy_list: ["http://proxy1:8080", "http://proxy2:8080"]
+      user_agent_rotation: true
+    enabled_categories: ["website", "organisation", "people", "ip_server"]
+    tools:
+      website: ["nmap", "theharvester"]
+      organisation: ["theharvester", "nmap"]
+      people: ["theharvester"]
+      ip_server: ["nmap"]
+      
+  stealth:
+    name: "Stealth Scan"
+    description: "Anonymous reconnaissance with TOR and evasion techniques"
+    timeout: 600
+    parallel_workers: 2
+    scan_depth: 2
+    aggressiveness: "low"
+    enable_chaining: true
+    anonymity:
+      use_tor: true
+      use_proxy: true
+      user_agent_rotation: true
+      request_delay: 5
+      randomize_timing: true
+    enabled_categories: ["website", "organisation"]
+    tools:
+      website: ["theharvester"]
+      organisation: ["theharvester"]
+
+default_profile: "standard"
+
+global_settings:
+  max_parallel_workers: 8
+  default_timeout: 120
+  cache_enabled: true
+  state_persistence: true
+  intelligence_engine: true
+  artifact_chaining: true
+  cve_enrichment: true
+  report_formats: ["txt", "html", "json"]

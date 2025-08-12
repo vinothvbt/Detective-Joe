@@ -36,8 +36,10 @@ def check_virtual_environment():
 # Import framework components
 try:
     from config import TOOLS, INVESTIGATION_TYPES, OPTIONAL_TOOLS, API_DEPENDENT_TOOLS
-    from async_worker import AsyncWorkerPool, Task, TaskStatus
-    from plugins import PluginBase, NmapPlugin, TheHarvesterPlugin
+    from async_worker import AsyncWorkerPool, Task, TaskStatus, PLUGIN_REGISTRY
+    from plugins import PluginBase, NmapPlugin, TheHarvesterPlugin, PluginDiscovery
+    from intelligence import IntelligenceEngine
+    from reports import ReportManager
 except ImportError as e:
     print(f"Error: Failed to import required modules: {e}")
     print("Please ensure all framework components are in the same directory.")
@@ -80,10 +82,25 @@ class DetectiveJoe:
         timeout = self.profile.get("timeout", 120)
         self.worker_pool = AsyncWorkerPool(max_workers=max_workers, default_timeout=timeout)
         
-        # Initialize plugins
+        # Initialize plugin discovery and intelligence systems
+        self.plugin_discovery = PluginDiscovery(self.plugins_dir)
+        self.intelligence = IntelligenceEngine(self.state_dir)
+        self.report_manager = ReportManager(self.reports_dir)
+        
+        # Initialize plugins using discovery system
         self.plugins = self._init_plugins()
         
         self.logger.info(f"Detective Joe v1.5 initialized with profile '{profile}'")
+        
+        # State management
+        self.investigation_state = {
+            "active": False,
+            "target": None,
+            "category": None,
+            "start_time": None,
+            "artifacts": [],
+            "chained_tasks": []
+        }
     
     def _setup_logging(self) -> None:
         """Setup logging configuration."""
@@ -151,19 +168,39 @@ class DetectiveJoe:
         return profiles[profile_name]
     
     def _init_plugins(self) -> Dict[str, PluginBase]:
-        """Initialize available plugins."""
+        """Initialize available plugins using discovery system."""
         plugins = {}
         
-        # Initialize built-in plugins
         try:
-            plugins["nmap"] = NmapPlugin()
-            plugins["theharvester"] = TheHarvesterPlugin()
+            # Discover and load plugins
+            discovered_plugins = self.plugin_discovery.load_all_plugins()
+            plugins.update(discovered_plugins)
+            
+            # Update global plugin registry for async worker
+            PLUGIN_REGISTRY.clear()
+            for name, plugin in plugins.items():
+                PLUGIN_REGISTRY[name] = type(plugin)
+            
+            # Log available plugins
+            available_plugins = [name for name, plugin in plugins.items() if plugin.is_available()]
+            unavailable_plugins = [name for name, plugin in plugins.items() if not plugin.is_available()]
+            
+            self.logger.info(f"Available plugins: {', '.join(available_plugins) if available_plugins else 'none'}")
+            if unavailable_plugins:
+                self.logger.warning(f"Unavailable plugins: {', '.join(unavailable_plugins)}")
+            
         except Exception as e:
-            print(f"Error: Failed to initialize plugins: {e}")
-        
-        # Log available plugins
-        available_plugins = [name for name, plugin in plugins.items() if plugin.is_available()]
-        self.logger.info(f"Available plugins: {', '.join(available_plugins)}")
+            self.logger.error(f"Failed to initialize plugins: {e}")
+            # Fallback to manual initialization
+            try:
+                plugins["nmap"] = NmapPlugin()
+                plugins["theharvester"] = TheHarvesterPlugin()
+                PLUGIN_REGISTRY.update({
+                    "nmap": NmapPlugin,
+                    "theharvester": TheHarvesterPlugin
+                })
+            except Exception as fallback_error:
+                self.logger.error(f"Fallback plugin initialization failed: {fallback_error}")
         
         return plugins
         
@@ -226,7 +263,7 @@ class DetectiveJoe:
     
     async def run_investigation_async(self, investigation_type: str, target: str, **kwargs) -> Dict[str, Any]:
         """
-        Run investigation asynchronously using the plugin system.
+        Run investigation asynchronously using the plugin system with intelligence and chaining.
         
         Args:
             investigation_type: Type of investigation to run
@@ -243,29 +280,39 @@ class DetectiveJoe:
         type_name = type_info['name']
         category = type_info['key']
         
+        # Update investigation state
+        self.investigation_state.update({
+            "active": True,
+            "target": target,
+            "category": category,
+            "start_time": datetime.datetime.now(),
+            "artifacts": [],
+            "chained_tasks": []
+        })
+        
         self.logger.info(f"Starting {type_name} for target: {target}")
         
-        # Get plugins for this category from profile
-        profile_tools = self.profile.get("tools", {}).get(category, [])
-        if not profile_tools:
-            self.logger.warning(f"No tools configured for category '{category}' in profile '{self.profile_name}'")
-            return {"error": f"No tools configured for category '{category}'"}
-        
-        # Filter available plugins
-        available_plugins = []
-        for tool_name in profile_tools:
-            if tool_name in self.plugins and self.plugins[tool_name].is_available():
-                available_plugins.append(self.plugins[tool_name])
-            else:
-                self.logger.warning(f"Plugin '{tool_name}' not available")
-        
-        if not available_plugins:
-            return {"error": "No available plugins for this investigation"}
-        
-        # Execute plugins asynchronously
-        self.logger.info(f"Executing {len(available_plugins)} plugins: {[p.name for p in available_plugins]}")
-        
         try:
+            # Get plugins for this category from profile
+            profile_tools = self.profile.get("tools", {}).get(category, [])
+            if not profile_tools:
+                self.logger.warning(f"No tools configured for category '{category}' in profile '{self.profile_name}'")
+                return {"error": f"No tools configured for category '{category}'"}
+            
+            # Filter available plugins
+            available_plugins = []
+            for tool_name in profile_tools:
+                if tool_name in self.plugins and self.plugins[tool_name].is_available():
+                    available_plugins.append(self.plugins[tool_name])
+                else:
+                    self.logger.warning(f"Plugin '{tool_name}' not available")
+            
+            if not available_plugins:
+                return {"error": "No available plugins for this investigation"}
+            
+            # Execute plugins asynchronously
+            self.logger.info(f"Executing {len(available_plugins)} plugins: {[p.name for p in available_plugins]}")
+            
             results = await self.worker_pool.execute_plugin_batch(
                 available_plugins,
                 target,
@@ -273,6 +320,28 @@ class DetectiveJoe:
                 timeout=self.profile.get("timeout", 120),
                 **kwargs
             )
+            
+            # Process results through intelligence engine
+            artifacts = self.intelligence.process_plugin_results(results, target, category)
+            self.investigation_state["artifacts"] = artifacts
+            
+            # Perform artifact chaining if enabled in profile
+            chained_results = {}
+            if self.profile.get("enable_chaining", True) and self.profile.get("scan_depth", 1) > 1:
+                chained_results = await self._perform_artifact_chaining(artifacts, category, kwargs)
+            
+            # Merge chained results
+            if chained_results:
+                results.update(chained_results)
+                # Process chained artifacts
+                chained_artifacts = self.intelligence.process_plugin_results(chained_results, target, category)
+                artifacts.extend(chained_artifacts)
+            
+            # Enrich artifacts with CVE information
+            self.intelligence.enrich_artifacts_with_cve(artifacts)
+            
+            # Save intelligence state
+            self.intelligence.save_state()
             
             # Process results
             investigation_result = {
@@ -282,7 +351,9 @@ class DetectiveJoe:
                 "profile": self.profile_name,
                 "timestamp": datetime.datetime.now().isoformat(),
                 "plugin_results": results,
-                "summary": self._generate_summary(results)
+                "artifacts": artifacts,
+                "chained_tasks": self.investigation_state["chained_tasks"],
+                "summary": self._generate_summary(results, artifacts)
             }
             
             return investigation_result
@@ -290,8 +361,87 @@ class DetectiveJoe:
         except Exception as e:
             self.logger.error(f"Investigation failed: {e}")
             return {"error": str(e)}
+        finally:
+            # Mark investigation as inactive
+            self.investigation_state["active"] = False
     
-    def _generate_summary(self, results: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    async def _perform_artifact_chaining(self, artifacts: List[Dict[str, Any]], category: str, kwargs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+        """
+        Perform artifact chaining by feeding discovered targets into new plugin tasks.
+        
+        Args:
+            artifacts: List of discovered artifacts
+            category: Current investigation category
+            kwargs: Additional parameters
+            
+        Returns:
+            Results from chained plugin executions
+        """
+        chained_results = {}
+        
+        # Get chainable artifacts
+        chainable = self.intelligence.get_chainable_artifacts(category)
+        
+        # Determine chaining depth and aggressiveness from profile
+        max_depth = self.profile.get("scan_depth", 1)
+        aggressiveness = self.profile.get("aggressiveness", "medium")
+        
+        if max_depth <= 1:
+            return chained_results
+        
+        self.logger.info(f"Performing artifact chaining with depth {max_depth}")
+        
+        # Find plugins that can consume these artifacts
+        for artifact_type, values in chainable.items():
+            if not values:
+                continue
+            
+            # Get plugins that can consume this artifact type
+            candidates = self.plugin_discovery.get_chaining_candidates([artifact_type])
+            
+            # Limit candidates based on aggressiveness
+            if aggressiveness == "low":
+                candidates = candidates[:1]  # Only highest priority
+            elif aggressiveness == "medium":
+                candidates = candidates[:2]  # Top 2 priorities
+            # High aggressiveness uses all candidates
+            
+            for plugin_name in candidates:
+                if plugin_name in self.plugins and self.plugins[plugin_name].is_available():
+                    plugin = self.plugins[plugin_name]
+                    
+                    # Chain with discovered targets (limit to prevent explosion)
+                    chain_targets = values[:5] if aggressiveness == "low" else values[:10]
+                    
+                    for target in chain_targets:
+                        try:
+                            # Execute chained plugin
+                            chained_result = await self.worker_pool.execute_plugin_batch(
+                                [plugin],
+                                target,
+                                category,
+                                timeout=self.profile.get("timeout", 120) // 2,  # Reduced timeout for chained tasks
+                                **kwargs
+                            )
+                            
+                            # Add to chained results with unique key
+                            for task_id, result in chained_result.items():
+                                chained_key = f"chained_{plugin_name}_{target}_{len(chained_results)}"
+                                chained_results[chained_key] = result
+                                
+                                # Track chained task
+                                self.investigation_state["chained_tasks"].append({
+                                    "plugin": plugin_name,
+                                    "target": target,
+                                    "source_artifact_type": artifact_type,
+                                    "status": result.get("status", "unknown")
+                                })
+                        
+                        except Exception as e:
+                            self.logger.warning(f"Chained task failed: {plugin_name} -> {target}: {e}")
+        
+        self.logger.info(f"Completed artifact chaining: {len(chained_results)} additional tasks")
+        return chained_results
         """Generate summary statistics from plugin results."""
         total_tasks = len(results)
         successful_tasks = len([r for r in results.values() if r["status"] == "completed"])
@@ -300,15 +450,27 @@ class DetectiveJoe:
         
         total_duration = sum(r.get("duration", 0) for r in results.values() if r.get("duration"))
         
-        return {
+        summary = {
             "total_tasks": total_tasks,
             "successful_tasks": successful_tasks,
             "failed_tasks": failed_tasks,
             "timeout_tasks": timeout_tasks,
             "success_rate": (successful_tasks / total_tasks * 100) if total_tasks > 0 else 0,
             "total_duration": total_duration,
-            "average_duration": (total_duration / successful_tasks) if successful_tasks > 0 else 0
+            "average_duration": (total_duration / successful_tasks) if successful_tasks > 0 else 0,
+            "total_artifacts": len(artifacts) if artifacts else 0,
+            "chained_tasks": len(self.investigation_state.get("chained_tasks", []))
         }
+        
+        # Add artifact summary if available
+        if artifacts:
+            artifact_summary = {}
+            for artifact in artifacts:
+                artifact_type = artifact.type if hasattr(artifact, 'type') else 'unknown'
+                artifact_summary[artifact_type] = artifact_summary.get(artifact_type, 0) + 1
+            summary["artifacts_by_type"] = artifact_summary
+        
+        return summary
     
     def generate_report_filename(self, target: str, category: str = None) -> str:
         """Generate a timestamped report filename."""
@@ -417,17 +579,28 @@ EXECUTIVE SUMMARY
         
         return content
     
-    def save_report(self, content: str, filename: str) -> Optional[Path]:
-        """Save the investigation report to file."""
-        report_path = self.reports_dir / filename
+    def save_report(self, investigation_result: Dict[str, Any], artifacts: List[Any] = None) -> Dict[str, Optional[Path]]:
+        """
+        Save investigation reports in multiple formats.
         
+        Args:
+            investigation_result: Investigation results dictionary
+            artifacts: List of artifacts discovered
+            
+        Returns:
+            Dictionary mapping format to file path
+        """
         try:
-            with open(report_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            return report_path
+            reports = self.report_manager.generate_all_reports(investigation_result, artifacts)
+            return reports
         except Exception as e:
-            self.logger.error(f"Error saving report: {e}")
-            return None
+            self.logger.error(f"Error saving reports: {e}")
+            return {}
+    
+    def generate_report_content(self, investigation_result: Dict[str, Any]) -> str:
+        """Generate formatted TXT report content (legacy compatibility)."""
+        artifacts = investigation_result.get("artifacts", [])
+        return self.report_manager.txt_generator.generate(investigation_result, artifacts)
     
     async def run_cli_investigation(self, args: argparse.Namespace) -> None:
         """
@@ -464,14 +637,13 @@ EXECUTIVE SUMMARY
                 print(f"[!] Investigation failed: {result['error']}")
                 return
             
-            # Generate and save report
-            report_content = self.generate_report_content(result)
-            filename = self.generate_report_filename(args.target, args.category)
-            report_path = self.save_report(report_content, filename)
+            # Generate and save reports
+            reports = self.save_report(result, result.get("artifacts", []))
             
-            if report_path:
+            if reports:
                 print(f"[✓] Investigation completed successfully!")
-                print(f"[✓] Report saved: {report_path}")
+                for format_type, report_path in reports.items():
+                    print(f"[✓] {format_type.upper()} report saved: {report_path}")
                 
                 # Print summary
                 summary = result.get("summary", {})
@@ -479,8 +651,11 @@ EXECUTIVE SUMMARY
                 print(f"  Tasks executed: {summary.get('total_tasks', 0)}")
                 print(f"  Success rate: {summary.get('success_rate', 0):.1f}%")
                 print(f"  Total time: {summary.get('total_duration', 0):.2f}s")
+                print(f"  Artifacts found: {summary.get('total_artifacts', 0)}")
+                if summary.get('chained_tasks', 0) > 0:
+                    print(f"  Chained tasks: {summary.get('chained_tasks', 0)}")
             else:
-                print("[!] Investigation completed but failed to save report")
+                print("[!] Investigation completed but failed to save reports")
                 
         except Exception as e:
             self.logger.error(f"CLI investigation failed: {e}")
@@ -504,14 +679,13 @@ EXECUTIVE SUMMARY
                 if "error" in result:
                     print(f"[!] Investigation failed: {result['error']}")
                 else:
-                    # Generate and save report
-                    report_content = self.generate_report_content(result)
-                    filename = self.generate_report_filename(target)
-                    report_path = self.save_report(report_content, filename)
+                    # Generate and save reports
+                    reports = self.save_report(result, result.get("artifacts", []))
                     
-                    if report_path:
+                    if reports:
                         print(f"\n[✓] Investigation completed!")
-                        print(f"[✓] Report saved: {report_path}")
+                        for format_type, report_path in reports.items():
+                            print(f"[✓] {format_type.upper()} report saved: {report_path}")
                         
                         # Print summary
                         summary = result.get("summary", {})
@@ -519,8 +693,11 @@ EXECUTIVE SUMMARY
                         print(f"  Tasks executed: {summary.get('total_tasks', 0)}")
                         print(f"  Success rate: {summary.get('success_rate', 0):.1f}%")
                         print(f"  Total time: {summary.get('total_duration', 0):.2f}s")
+                        print(f"  Artifacts found: {summary.get('total_artifacts', 0)}")
+                        if summary.get('chained_tasks', 0) > 0:
+                            print(f"  Chained tasks: {summary.get('chained_tasks', 0)}")
                     else:
-                        print("\n[!] Investigation completed but failed to save report.")
+                        print("\n[!] Investigation completed but failed to save reports.")
                 
                 # Ask if user wants to continue
                 continue_choice = input("\nRun another investigation? (y/n): ").strip().lower()
@@ -553,18 +730,24 @@ EXECUTIVE SUMMARY
             print()
     
     def list_plugins(self) -> None:
-        """List available plugins."""
+        """List available plugins with enhanced information."""
         print("\nAvailable Plugins:")
         print("=" * 50)
         
-        for name, plugin in self.plugins.items():
-            status = "✓" if plugin.is_available() else "✗"
-            print(f"[{status}] {name}")
-            metadata = plugin.get_metadata()
-            print(f"    Tool: {metadata['tool_name']}")
-            print(f"    Categories: {', '.join(metadata['categories'])}")
-            print(f"    Required Tools: {', '.join(metadata['required_tools'])}")
-            print(f"    Available: {metadata['available']}")
+        # Get plugin information from discovery system
+        all_plugins_info = self.plugin_discovery.list_all_plugins()
+        
+        for name, info in all_plugins_info.items():
+            status = "✓" if info['available'] else "✗"
+            print(f"[{status}] {name} v{info['version']}")
+            print(f"    Description: {info['description']}")
+            print(f"    Tool: {info['tool_name']}")
+            print(f"    Categories: {', '.join(info['categories'])}")
+            print(f"    Required Tools: {', '.join(info['required_tools'])}")
+            print(f"    Chain Priority: {info['chain_priority']}")
+            print(f"    Tags: {', '.join(info['tags'])}")
+            print(f"    Available: {info['available']}")
+            print(f"    Loaded: {info['loaded']}")
             print()
 
 
