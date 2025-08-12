@@ -81,8 +81,10 @@ secrets.txt
 api_keys.txt
 config_local.py
 
-# Reports with sensitive data (optional - you may want to keep reports)
-# reports/*.txt
+# Detective Joe specific
+cache/
+state/
+reports/*.txt
 
 # Backup files
 *.bak

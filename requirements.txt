@@ -1,0 +1,35 @@
+# Detective Joe v1.5 - Requirements
+# Core dependencies for the next-gen recon framework
+
+# YAML processing for profiles configuration
+PyYAML>=6.0
+
+# Optional dependencies for enhanced functionality
+# These are not strictly required but provide additional features
+
+# For JSON processing in some plugins (usually included with Python)
+# json
+
+# For advanced logging and monitoring (optional)
+# structlog>=23.0
+
+# For HTTP requests in web-based plugins (optional)
+# requests>=2.31.0
+
+# For enhanced DNS operations (optional)
+# dnspython>=2.4.0
+
+# For IP address validation and manipulation (optional)
+# ipaddress  # Built into Python 3.3+
+
+# Development dependencies (for testing and development)
+# pytest>=7.0  # Alternative to unittest
+# pytest-asyncio>=0.21.0  # For async testing
+# black>=23.0  # Code formatting
+# flake8>=6.0  # Code linting
+
+# Note: Most reconnaissance tools (nmap, theHarvester, etc.) are expected
+# to be installed separately as system packages, typically through:
+# - Kali Linux package manager
+# - apt install nmap theharvester
+# - Manual tool installation
