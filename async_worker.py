@@ -267,16 +267,17 @@ class AsyncWorkerPool:
             try:
                 # Import plugins here to avoid circular imports
                 from plugins import NmapPlugin, TheHarvesterPlugin
-                
-                # Get plugin instance
-                plugin = None
-                if task.plugin_name == "nmap":
-                    plugin = NmapPlugin()
-                elif task.plugin_name == "theharvester":
-                    plugin = TheHarvesterPlugin()
-                
-                if not plugin:
+
+                # Register plugins if not already registered
+                if not PLUGIN_REGISTRY:
+                    PLUGIN_REGISTRY["nmap"] = NmapPlugin
+                    PLUGIN_REGISTRY["theharvester"] = TheHarvesterPlugin
+
+                # Get plugin instance from registry
+                plugin_cls = PLUGIN_REGISTRY.get(task.plugin_name)
+                if not plugin_cls:
                     raise ValueError(f"Unknown plugin: {task.plugin_name}")
+                plugin = plugin_cls()
                 
                 # Execute plugin
                 result = await plugin.execute(
