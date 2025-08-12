@@ -93,10 +93,10 @@ class StateManager:
         self.current_state = InvestigationState()
         self.kill_requested = False
         
-        # Register signal handlers for graceful shutdown
-        signal.signal(signal.SIGINT, self._signal_handler)
-        signal.signal(signal.SIGTERM, self._signal_handler)
-    
+        # Register signal handlers for graceful shutdown if requested
+        if register_signal_handlers:
+            signal.signal(signal.SIGINT, self._signal_handler)
+            signal.signal(signal.SIGTERM, self._signal_handler)
     def _signal_handler(self, signum: int, frame) -> None:
         """Handle termination signals."""
         self.logger.info(f"Received signal {signum}, initiating graceful shutdown...")
