@@ -188,7 +188,6 @@ class TestAsyncWorkerPool(unittest.TestCase):
             try:
                 # Create mock plugin and register it
                 plugin = MockPlugin()
-                from async_worker import PLUGIN_REGISTRY
                 PLUGIN_REGISTRY["mock"] = MockPlugin
                 
                 # Execute plugin through worker pool
