@@ -365,7 +365,7 @@ class DetectiveJoe:
             # Mark investigation as inactive
             self.investigation_state["active"] = False
     
-    async def _perform_artifact_chaining(self, artifacts: List[Any], category: str, kwargs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    async def _perform_artifact_chaining(self, artifacts: List[Dict[str, Any]], category: str, kwargs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         """
         Perform artifact chaining by feeding discovered targets into new plugin tasks.
         
