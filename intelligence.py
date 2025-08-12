@@ -7,7 +7,6 @@ Artifact management, deduplication, CVE matching, and enrichment system.
 import hashlib
 import json
 import re
-import requests
 import logging
 from datetime import datetime
 from typing import Dict, Any, List, Set, Optional, Tuple
