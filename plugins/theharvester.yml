@@ -1,0 +1,39 @@
+name: "theharvester"
+version: "1.0"
+description: "Email harvesting and OSINT plugin using theHarvester for information gathering"
+author: "Detective Joe Team"
+tool_name: "theHarvester"
+required_tools:
+  - "theHarvester"
+categories:
+  - "website"
+  - "organisation"
+  - "people"
+plugin_class: "TheHarvesterPlugin"
+module_path: "theharvester_plugin"
+settings:
+  default_timeout: 180
+  default_limit: 500
+  default_sources:
+    website: "google,bing,duckduckgo,yahoo"
+    organisation: "google,bing,linkedin,yahoo,duckduckgo"
+    people: "google,bing,linkedin,twitter,yahoo"
+artifacts:
+  produces:
+    - "emails"
+    - "hosts"
+    - "subdomains"
+    - "ips"
+    - "people"
+    - "linkedin_profiles"
+    - "twitter_profiles"
+  consumes:
+    - "domains"
+    - "organizations"
+    - "people_names"
+chain_priority: 1
+tags:
+  - "osint"
+  - "emails"
+  - "social"
+  - "harvesting"

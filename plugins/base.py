@@ -6,6 +6,7 @@ Defines the base plugin interface that all reconnaissance plugins must implement
 
 import asyncio
 import subprocess
+import time
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
 import logging
@@ -143,6 +144,9 @@ class PluginBase(ABC):
             command = self.build_command(target, category, **kwargs)
             self.logger.info(f"Executing: {command}")
             
+            # Track execution time
+            start_time = time.time()
+            
             # Execute command asynchronously
             process = await asyncio.create_subprocess_shell(
                 command,
@@ -155,6 +159,8 @@ class PluginBase(ABC):
                     process.communicate(),
                     timeout=exec_timeout
                 )
+                
+                execution_time = time.time() - start_time
                 
                 # Decode output
                 stdout_str = stdout.decode('utf-8', errors='ignore')

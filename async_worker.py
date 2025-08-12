@@ -11,6 +11,9 @@ from dataclasses import dataclass
 from enum import Enum
 import time
 
+# Global plugin registry for dynamic plugin loading
+PLUGIN_REGISTRY: Dict[str, Any] = {}
+
 
 class TaskStatus(Enum):
     """Task execution status."""
