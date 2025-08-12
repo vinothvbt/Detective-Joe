@@ -182,12 +182,16 @@ class TorManager:
         """
         Start TOR service.
         
+        Note:
+            This may require root privileges. If the service cannot be started due to insufficient
+            permissions, please start the TOR service manually (e.g., with 'sudo systemctl start tor').
+        
         Returns:
             True if started successfully
         """
         try:
-            # Try to start TOR service
-            subprocess.run(['sudo', 'systemctl', 'start', 'tor'], 
+            # Try to start TOR service (may require root privileges)
+            subprocess.run(['systemctl', 'start', 'tor'], 
                          check=True, capture_output=True)
             
             # Wait a bit for TOR to start
