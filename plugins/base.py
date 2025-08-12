@@ -173,7 +173,7 @@ class PluginBase(ABC):
                     "stdout": stdout_str,
                     "stderr": stderr_str,
                     "parsed_data": parsed_data,
-                    "execution_time": exec_timeout
+                    "execution_time": execution_time
                 }
                 
             except asyncio.TimeoutError:
