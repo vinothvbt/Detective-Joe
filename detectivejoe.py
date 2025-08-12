@@ -18,6 +18,21 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+# Check if running in virtual environment
+def check_virtual_environment():
+    """Check if script is running inside a virtual environment."""
+    if sys.prefix == sys.base_prefix and not os.environ.get('VIRTUAL_ENV'):
+        print("❌ Error: Detective Joe must be run inside a virtual environment")
+        print("")
+        print("🔧 To fix this issue:")
+        print("   1. Run the setup script: ./setup.sh")
+        print("   2. Activate the virtual environment: source .venv/bin/activate")
+        print("   3. Then run Detective Joe again")
+        print("")
+        print("💡 This prevents pip installation conflicts on systems like Kali Linux")
+        print("   with externally-managed-environment restrictions (PEP 668).")
+        sys.exit(1)
+
 # Import framework components
 try:
     from config import TOOLS, INVESTIGATION_TYPES, OPTIONAL_TOOLS, API_DEPENDENT_TOOLS
@@ -675,6 +690,9 @@ async def main():
 
 
 if __name__ == "__main__":
+    # Check virtual environment first
+    check_virtual_environment()
+    
     # Check if running on appropriate system
     if not sys.platform.startswith('linux'):
         print("Warning: Detective Joe is optimized for Linux systems. Some tools may not be available.")
