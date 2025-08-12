@@ -21,7 +21,7 @@ from typing import Dict, Any, List, Optional
 # Check if running in virtual environment
 def check_virtual_environment():
     """Check if script is running inside a virtual environment."""
-    if sys.prefix == sys.base_prefix:
+    if sys.prefix == sys.base_prefix and not os.environ.get('VIRTUAL_ENV'):
         print("❌ Error: Detective Joe must be run inside a virtual environment")
         print("")
         print("🔧 To fix this issue:")
