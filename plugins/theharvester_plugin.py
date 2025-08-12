@@ -285,7 +285,7 @@ class TheHarvesterPlugin(PluginBase):
         # For people category, allow email addresses
         if category == "people":
             if "@" in target:
-                return re.match(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$', target) is not None
+                return re.match(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$', target) is not None
             else:
                 # Allow names for people search
                 return True
