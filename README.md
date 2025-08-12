@@ -75,12 +75,47 @@ class PluginBase(ABC):
 
 ## 📥 Installation
 
+### 🚀 Automated Setup (Recommended)
+The easiest way to set up Detective Joe, especially on Kali Linux and systems with PEP 668 restrictions:
+
 ```bash
 git clone https://github.com/vinothvbt/Detective-Joe.git
 cd Detective-Joe
+chmod +x setup.sh
+./setup.sh
+```
+
+The setup script will:
+- ✅ Check Python 3 and pip availability
+- ✅ Create a virtual environment in `.venv/`
+- ✅ Install all requirements safely
+- ✅ Provide clear next steps
+
+After setup, always activate the virtual environment before using Detective Joe:
+```bash
+source .venv/bin/activate
+python3 detectivejoe.py --help
+```
+
+### 🔧 Manual Setup
+For manual installation or if you prefer to manage dependencies yourself:
+
+```bash
+git clone https://github.com/vinothvbt/Detective-Joe.git
+cd Detective-Joe
+
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install requirements
 pip install -r requirements.txt
+
+# Make script executable
 chmod +x detectivejoe.py
 ```
+
+**Important for Kali Linux users:** Due to PEP 668 externally-managed-environment restrictions, Detective Joe **requires** a virtual environment. The automated setup handles this automatically.
 
 ### System Dependencies
 Detective Joe v1.5 leverages existing reconnaissance tools. Install them via:
