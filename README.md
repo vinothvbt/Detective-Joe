@@ -39,15 +39,23 @@ detective-joe/
 ├── config.py                # Legacy tool configurations (v1 compatibility)
 ├── profiles.yaml            # Investigation profiles and settings
 ├── async_worker.py          # Async worker pool implementation
+├── intelligence.py          # Intelligence engine for artifact management
+├── reports.py               # Multi-format report generators (TXT/HTML/JSON)
+├── state_manager.py         # State persistence and resume functionality
+├── anonymity.py             # TOR/proxy/UA rotation for anonymous recon
 ├── requirements.txt         # Python dependencies
 ├── plugins/                 # Plugin architecture
 │   ├── __init__.py         #   Plugin package initialization
 │   ├── base.py             #   Base plugin class and interface
+│   ├── discovery.py        #   Plugin auto-discovery and manifest system
+│   ├── nmap.yml            #   Nmap plugin manifest
 │   ├── nmap_plugin.py      #   Nmap reconnaissance plugin
+│   ├── theharvester.yml    #   theHarvester plugin manifest
 │   └── theharvester_plugin.py #  theHarvester OSINT plugin
 ├── reports/                 # Generated investigation reports
 ├── cache/                   # Cached tool outputs and results
 ├── state/                   # Framework state and execution logs
+│   └── intelligence/       #   Artifact database and intelligence files
 ├── tests/                   # Test infrastructure
 │   └── test_framework.py   #   Comprehensive test suite
 └── README.md               # This documentation
@@ -63,6 +71,44 @@ class PluginBase(ABC):
     def build_command(target, category, **kwargs) -> str
     @abstractmethod
     def parse_output(output, target, category) -> Dict[str, Any]
+```
+
+### Plugin Auto-Discovery
+```yaml
+# Plugin Manifest (plugins/example.yml)
+name: "plugin_name"
+version: "1.0"
+description: "Plugin description"
+tool_name: "underlying_tool"
+required_tools: ["tool1", "tool2"]
+categories: ["website", "organisation"]
+plugin_class: "PluginClassName"
+module_path: "plugin_module"
+artifacts:
+  produces: ["emails", "domains", "ips"]
+  consumes: ["domains", "organizations"]
+chain_priority: 1
+tags: ["osint", "recon"]
+```
+
+### Intelligence Engine Architecture
+```python
+# Artifact Management
+class Artifact:
+    id: str
+    type: str  # email, domain, ip, port, service, etc.
+    value: str
+    source_plugin: str
+    confidence: float
+    tags: List[str]
+    metadata: Dict[str, Any]
+
+# Intelligence Processing
+- Automatic artifact extraction from plugin results
+- Deduplication based on type and value
+- CVE enrichment for services and vulnerabilities  
+- Confidence scoring and metadata enrichment
+- Persistent storage with JSON and binary formats
 ```
 
 ### Async Execution Model
@@ -147,9 +193,24 @@ python3 detectivejoe.py -c organisation -t company.com -p deep --workers 8
 # Quick IP investigation with custom timeout
 python3 detectivejoe.py -c ip -t 192.168.1.1 -p quick --timeout 60
 
+# Stealth investigation with anonymity
+python3 detectivejoe.py -c website -t example.com -p stealth
+
 # List available profiles and plugins
 python3 detectivejoe.py --list-profiles
 python3 detectivejoe.py --list-plugins
+```
+
+### State Management
+```bash
+# Resume interrupted investigation
+python3 detectivejoe.py --resume investigation_id
+
+# List saved states
+python3 detectivejoe.py --list-states
+
+# Kill active investigation (Ctrl+C also works)
+python3 detectivejoe.py --kill
 ```
 
 ### Interactive Mode (Enhanced)
@@ -172,13 +233,20 @@ $ python3 detectivejoe.py -c website -t example.com -p standard
 [*] Starting website investigation for: example.com
 [*] Using profile: standard
 [*] Executing 2 plugins: ['nmap', 'theharvester']
+[*] Processing 15 artifacts through intelligence engine
+[*] Performing artifact chaining with depth 2
+[*] Chained 3 additional tasks from discovered targets
 [✓] Investigation completed successfully!
-[✓] Report saved: reports/example.com_website_2025-01-15_14-30-45.txt
+[✓] TXT report saved: reports/example.com_website_2025-01-15_14-30-45.txt
+[✓] HTML report saved: reports/example.com_website_2025-01-15_14-30-45.html
+[✓] JSON report saved: reports/example.com_website_2025-01-15_14-30-45.json
 
 SUMMARY:
-  Tasks executed: 2
+  Tasks executed: 5
   Success rate: 100.0%
   Total time: 45.23s
+  Artifacts found: 15
+  Chained tasks: 3
 ```
 
 ---
@@ -192,33 +260,71 @@ profiles:
     name: "Quick Scan"
     timeout: 60
     parallel_workers: 3
-    enabled_categories: [website, ip_server]
+    scan_depth: 1
+    aggressiveness: "low"
+    enable_chaining: false
+    anonymity:
+      use_tor: false
+      use_proxy: false
+      user_agent_rotation: false
     tools:
-      website: [nmap, theharvester]
+      website: ["nmap"]
       
   standard:
     name: "Standard Scan"  
     timeout: 120
     parallel_workers: 4
+    scan_depth: 2
+    aggressiveness: "medium"
+    enable_chaining: true
+    anonymity:
+      use_tor: false
+      use_proxy: false
+      user_agent_rotation: true
     tools:
-      website: [nmap, theharvester, whatweb]
-      organisation: [theharvester, nmap]
+      website: ["nmap", "theharvester"]
+      organisation: ["theharvester", "nmap"]
       
   deep:
     name: "Deep Scan"
     timeout: 300
     parallel_workers: 6
+    scan_depth: 3
+    aggressiveness: "high"
+    enable_chaining: true
     tools:
-      website: [nmap, theharvester, sublist3r, amass, whatweb, nikto]
+      website: ["nmap", "theharvester"]
+      
+  stealth:
+    name: "Stealth Scan"
+    timeout: 600
+    parallel_workers: 2
+    aggressiveness: "low"
+    anonymity:
+      use_tor: true
+      use_proxy: true
+      user_agent_rotation: true
+      request_delay: 5
+      randomize_timing: true
+    tools:
+      website: ["theharvester"]
 ```
 
 ### Plugin Configuration
-Each plugin automatically:
-- Validates target compatibility
-- Checks tool availability  
-- Builds appropriate commands
-- Parses and structures output
-- Handles errors and timeouts
+Plugins are automatically discovered from the `plugins/` directory through YAML manifests:
+
+**Auto-Discovery Process:**
+1. Scans `plugins/` for `.yml`/`.yaml` manifest files
+2. Validates manifest structure and required fields
+3. Dynamically loads plugin classes from specified modules
+4. Registers plugins with the global plugin registry
+5. Checks tool availability and marks plugins as available/unavailable
+
+**Plugin Chaining:**
+- Artifacts discovered by plugins automatically feed into subsequent plugins
+- Chain priority determines execution order
+- Configurable scan depth controls chaining levels
+- Aggressiveness setting limits number of chained targets
 
 ---
 
@@ -235,10 +341,20 @@ Date: 2025-01-15T14:30:45
 
 EXECUTIVE SUMMARY
 -----------------
-Total Tasks Executed: 2
-Successful Tasks: 2  
+Total Tasks Executed: 5
+Successful Tasks: 5  
 Success Rate: 100.0%
 Total Execution Time: 45.23 seconds
+Artifacts Found: 15
+Chained Tasks: 3
+
+ARTIFACTS DISCOVERED
+--------------------
+Emails: 3
+Domains: 5  
+IPs: 2
+Open Ports: 4
+Services: 3
 
 [NMAP] - Status: COMPLETED
 ==================================================
@@ -249,11 +365,8 @@ STRUCTURED DATA:
 HOSTS: 
   - example.com (93.184.216.34)
 OPEN_PORTS:
-  - 80/tcp (http)
-  - 443/tcp (https)
-SERVICES:
-  - 80: Apache httpd 2.4.41
-  - 443: Apache httpd 2.4.41 (SSL)
+  - 80/tcp (http) - Apache httpd 2.4.41
+  - 443/tcp (https) - Apache httpd 2.4.41 (SSL)
 
 [THEHARVESTER] - Status: COMPLETED  
 ==================================================
@@ -267,6 +380,18 @@ EMAILS:
 HOSTS:
   - www.example.com
   - mail.example.com
+
+DETAILED ARTIFACTS
+==================
+EMAIL ARTIFACTS:
+------------------------------
+Value: admin@example.com
+Source: theharvester
+Confidence: 0.80
+Tags: email, contact
+Metadata: {"domain": "example.com"}
+
+[Additional formats: HTML with interactive features, JSON with structured data]
 ```
 
 ---
@@ -280,29 +405,49 @@ python3 test_framework.py
 ```
 
 Tests cover:
-- Plugin base class functionality
-- Async worker pool operations
-- Plugin execution and parsing
-- Integration workflows
-- Error handling and edge cases
+- Plugin base class functionality and async execution
+- Plugin auto-discovery and manifest loading
+- Async worker pool operations and task management
+- Intelligence engine artifact processing
+- Report generation in multiple formats
+- State management and persistence
+- Integration workflows and error handling
 
 ---
 
-## 🛣️ v1.5 Technical Vision & Roadmap
+## 🛣️ v1.5 Technical Vision & Implementation Status
 
-### Current Release (v1.5)
-✅ **Foundation Architecture**
-- Async execution framework with worker pools
-- Plugin architecture with extensible base classes
-- Profile-based configuration system
-- CLI argument parsing alongside interactive mode
-- Comprehensive test infrastructure
-- Structured report generation
+### ✅ Fully Implemented Features
 
-✅ **Proof-of-Concept Plugins**
-- Nmap plugin with intelligent command building
-- theHarvester plugin with output parsing
-- Plugin availability checking and validation
+**🔄 Core Framework**
+- Async execution framework with configurable worker pools ✓
+- Plugin architecture with auto-discovery from YAML manifests ✓
+- Profile-based configuration with advanced controls ✓
+- CLI and interactive modes with comprehensive argument parsing ✓
+- Multi-format report generation (TXT/HTML/JSON) ✓
+- Comprehensive test infrastructure with async support ✓
+
+**🧠 Intelligence Engine**
+- Artifact extraction and management system ✓
+- Automatic deduplication with confidence scoring ✓
+- CVE enrichment and vulnerability tagging ✓
+- Persistent artifact database (JSON/binary) ✓
+- Artifact-based plugin chaining ✓
+
+**🔧 Advanced Features**
+- State management with save/resume/kill functionality ✓
+- Investigation persistence and recovery ✓
+- Anonymity layer with TOR/proxy/User-Agent rotation ✓
+- Configurable scan depth and aggressiveness ✓
+- Request timing randomization and delay controls ✓
+
+**🧩 Plugin System**
+- YAML-based plugin manifests with metadata ✓
+- Auto-discovery and dynamic loading ✓
+- Nmap plugin with intelligent command building ✓
+- theHarvester plugin with comprehensive parsing ✓
+- Plugin chaining based on artifact types ✓
+- Graceful handling of missing tools ✓
 
 ### Upcoming Releases
 
@@ -335,7 +480,28 @@ Tests cover:
 ## 🔧 Development & Extension
 
 ### Adding New Plugins
+
+**1. Create Plugin YAML Manifest:**
+```yaml
+# plugins/mytool.yml
+name: "mytool"
+version: "1.0"
+description: "Custom reconnaissance tool"
+tool_name: "mytool"
+required_tools: ["mytool"]
+categories: ["website", "ip_server"]
+plugin_class: "MyToolPlugin"
+module_path: "mytool_plugin"
+artifacts:
+  produces: ["vulnerabilities", "services"]
+  consumes: ["domains", "ips"]
+chain_priority: 3
+tags: ["security", "scanning"]
+```
+
+**2. Implement Plugin Class:**
 ```python
+# plugins/mytool_plugin.py
 from plugins.base import PluginBase
 
 class MyToolPlugin(PluginBase):
@@ -361,16 +527,42 @@ class MyToolPlugin(PluginBase):
         return {"raw_output": output, "target": target}
 ```
 
+**3. Plugin Auto-Discovery:**
+Plugins are automatically discovered and loaded on framework startup.
+
 ### Profile Customization
 Create custom profiles in `profiles.yaml`:
 ```yaml
 profiles:
   my_custom:
     name: "My Custom Profile"
+    description: "Tailored reconnaissance profile"
     timeout: 180
     parallel_workers: 6
+    scan_depth: 2
+    aggressiveness: "medium"
+    enable_chaining: true
+    anonymity:
+      use_tor: false
+      use_proxy: true
+      proxy_list: ["http://proxy1:8080"]
+      user_agent_rotation: true
+      request_delay: 2
     tools:
-      website: [nmap, theharvester, mytool]
+      website: ["nmap", "theharvester", "mytool"]
+```
+
+### Advanced Configuration
+```yaml
+global_settings:
+  max_parallel_workers: 8
+  default_timeout: 120
+  cache_enabled: true
+  state_persistence: true
+  intelligence_engine: true
+  artifact_chaining: true
+  cve_enrichment: true
+  report_formats: ["txt", "html", "json"]
 ```
 
 ---
