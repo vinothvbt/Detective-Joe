@@ -54,12 +54,12 @@ echo "✅ Virtual environment activated: $VIRTUAL_ENV"
 # Install requirements
 echo "📋 Installing requirements from requirements.txt..."
 if [ -f "requirements.txt" ]; then
-    if pip install --timeout 30 --retries 3 -r requirements.txt; then
+    if python3 -m pip install --timeout 30 --retries 3 -r requirements.txt; then
         echo "✅ Requirements installed successfully"
     else
         echo "❌ Error: Failed to install requirements"
         echo "   This might be due to network issues. Try running the script again."
-        echo "   Or manually install: pip install -r requirements.txt"
+        echo "   Or manually install: python3 -m pip install -r requirements.txt"
         exit 1
     fi
 else
