@@ -5,7 +5,7 @@ TXT, HTML, and JSON report generation with artifact attachments.
 """
 
 import json
-import html
+from html import escape
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
