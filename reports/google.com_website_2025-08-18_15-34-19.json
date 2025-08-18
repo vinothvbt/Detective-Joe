@@ -1,0 +1,67 @@
+{
+  "metadata": {
+    "generator": "Detective Joe v1.5",
+    "format_version": "1.0",
+    "generated_at": "2025-08-18T15:34:19.557511"
+  },
+  "investigation": {
+    "type": "Website Investigation",
+    "target": "google.com",
+    "category": "website",
+    "profile": "demo",
+    "timestamp": "2025-08-18T15:34:19.557069"
+  },
+  "summary": {
+    "total_tasks": 1,
+    "successful_tasks": 1,
+    "failed_tasks": 0,
+    "success_rate": 100.0,
+    "total_execution_time": 0.01,
+    "total_artifacts": 0,
+    "artifact_types": {}
+  },
+  "plugin_results": {
+    "demo_google.com_website_1755531259455": {
+      "task_id": "demo_google.com_website_1755531259455",
+      "plugin": "demo",
+      "status": "completed",
+      "result": {
+        "status": "success",
+        "plugin": "demo",
+        "target": "google.com",
+        "category": "website",
+        "command": "curl -s -I --max-time 10 google.com 2>/dev/null || echo 'Demo: HTTP check for google.com'",
+        "return_code": 0,
+        "stdout": "Demo: HTTP check for google.com\n",
+        "stderr": "",
+        "parsed_data": {
+          "target": "google.com",
+          "category": "website",
+          "status": "completed",
+          "raw_output": "Demo: HTTP check for google.com\n",
+          "artifacts": [
+            {
+              "type": "http_status",
+              "value": "Demo: HTTP check for google.com",
+              "confidence": 0.9
+            },
+            {
+              "type": "demo_info",
+              "value": "Demo scan completed for google.com",
+              "confidence": 1.0
+            }
+          ],
+          "summary": "Demo plugin executed for google.com (website investigation)"
+        },
+        "execution_time": 0.008516073226928711
+      },
+      "error": null,
+      "duration": 0.008701562881469727
+    }
+  },
+  "artifacts": {
+    "count": 0,
+    "by_type": {},
+    "items": []
+  }
+}

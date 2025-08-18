@@ -308,7 +308,30 @@ class DetectiveJoe:
                     self.logger.warning(f"Plugin '{tool_name}' not available")
             
             if not available_plugins:
-                return {"error": "No available plugins for this investigation"}
+                # Create detailed error message with tool installation guidance
+                profile_tools = self.profile.get("tools", {}).get(category, [])
+                missing_tools = []
+                for tool_name in profile_tools:
+                    if tool_name in self.plugins:
+                        plugin = self.plugins[tool_name]
+                        for required_tool in plugin.required_tools:
+                            import shutil
+                            if not shutil.which(required_tool):
+                                missing_tools.append(required_tool)
+                
+                error_msg = f"No available plugins for {category} investigation."
+                if missing_tools:
+                    error_msg += f"\n\nMissing required tools: {', '.join(set(missing_tools))}"
+                    error_msg += "\n\nTo install missing tools:"
+                    if 'nmap' in missing_tools:
+                        error_msg += "\n  • Ubuntu/Debian: sudo apt install nmap"
+                        error_msg += "\n  • macOS: brew install nmap"
+                    if 'theharvester' in missing_tools:
+                        error_msg += "\n  • pip install theHarvester"
+                        error_msg += "\n  • OR: git clone https://github.com/laramies/theHarvester"
+                    error_msg += "\n\nAfter installation, run Detective Joe again."
+                
+                return {"error": error_msg}
             
             # Execute plugins asynchronously
             self.logger.info(f"Executing {len(available_plugins)} plugins: {[p.name for p in available_plugins]}")
@@ -578,6 +601,40 @@ EXECUTIVE SUMMARY
             content += "\n"
         
         return content
+    
+    def _generate_summary(self, results: Dict[str, Dict[str, Any]], artifacts: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Generate a summary of investigation results.
+        
+        Args:
+            results: Plugin execution results
+            artifacts: Discovered artifacts
+            
+        Returns:
+            Summary dictionary with key statistics
+        """
+        total_tasks = len(results)
+        successful_tasks = len([r for r in results.values() if r.get("status") == "completed"])
+        failed_tasks = total_tasks - successful_tasks
+        
+        # Artifact type counts
+        artifact_types = {}
+        for artifact in artifacts:
+            artifact_type = artifact.get("type", "unknown")
+            artifact_types[artifact_type] = artifact_types.get(artifact_type, 0) + 1
+        
+        # Calculate total execution time
+        total_time = sum(r.get("duration", 0) for r in results.values())
+        
+        return {
+            "total_tasks": total_tasks,
+            "successful_tasks": successful_tasks,
+            "failed_tasks": failed_tasks,
+            "success_rate": (successful_tasks / total_tasks * 100) if total_tasks > 0 else 0,
+            "total_execution_time": round(total_time, 2),
+            "total_artifacts": len(artifacts),
+            "artifact_types": artifact_types
+        }
     
     def save_report(self, investigation_result: Dict[str, Any], artifacts: List[Any] = None) -> Dict[str, Optional[Path]]:
         """

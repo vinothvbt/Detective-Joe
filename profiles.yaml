@@ -1,5 +1,23 @@
 
 profiles:
+  demo:
+    name: "Demo Mode"
+    description: "Demonstration mode that works without external tools"
+    timeout: 30
+    parallel_workers: 2
+    scan_depth: 1
+    aggressiveness: "low"
+    enable_chaining: false
+    anonymity:
+      use_tor: false
+      use_proxy: false
+      user_agent_rotation: false
+    enabled_categories: ["website", "organisation", "ip_server"]
+    tools:
+      website: ["demo"]
+      organisation: ["demo"]
+      ip_server: ["demo"]
+
   quick:
     name: "Quick Scan"
     description: "Fast reconnaissance with basic tools"
