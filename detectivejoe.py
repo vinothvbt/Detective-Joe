@@ -315,7 +315,6 @@ class DetectiveJoe:
                     if tool_name in self.plugins:
                         plugin = self.plugins[tool_name]
                         for required_tool in plugin.required_tools:
-                            import shutil
                             if not shutil.which(required_tool):
                                 missing_tools.append(required_tool)
                 
