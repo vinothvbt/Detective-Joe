@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from plugins.base import PluginBase
 from plugins.nmap_plugin import NmapPlugin
 from plugins.theharvester_plugin import TheHarvesterPlugin
-from async_worker import AsyncWorkerPool, Task, TaskStatus
+from async_worker import AsyncWorkerPool, Task, TaskStatus, PLUGIN_REGISTRY
 
 
 class MockPlugin(PluginBase):

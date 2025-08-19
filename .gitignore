@@ -85,6 +85,8 @@ config_local.py
 cache/
 state/
 reports/*.txt
+reports/*.html
+reports/*.json
 
 # Backup files
 *.bak

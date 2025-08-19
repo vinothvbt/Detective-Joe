@@ -202,7 +202,7 @@ class HtmlReportGenerator(ReportGenerator):
         context = {
             'title': f"Detective Joe Investigation Report",
             'investigation_type': investigation_result.get('investigation_type', 'Unknown'),
-            'target': html.escape(investigation_result.get('target', 'Unknown')),
+            'target': escape(investigation_result.get('target', 'Unknown')),
             'category': investigation_result.get('category', 'Unknown'),
             'profile': investigation_result.get('profile', 'Unknown'),
             'timestamp': investigation_result.get('timestamp', 'Unknown'),
@@ -457,7 +457,7 @@ class HtmlReportGenerator(ReportGenerator):
                 plugin_result = result['result']
                 
                 if 'command' in plugin_result:
-                    plugin_html += f'<div class="command">{html.escape(plugin_result["command"])}</div>'
+                    plugin_html += f'<div class="command">{escape(plugin_result["command"])}</div>'
                 
                 if 'parsed_data' in plugin_result:
                     plugin_html += '<button class="collapsible" onclick="toggleContent(this)">📊 Structured Data</button>'
@@ -468,13 +468,13 @@ class HtmlReportGenerator(ReportGenerator):
                 if 'stdout' in plugin_result and plugin_result['stdout']:
                     plugin_html += '<button class="collapsible" onclick="toggleContent(this)">📝 Raw Output</button>'
                     plugin_html += '<div class="content">'
-                    plugin_html += f'<div class="raw-output">{html.escape(plugin_result["stdout"][:5000])}'
+                    plugin_html += f'<div class="raw-output">{escape(plugin_result["stdout"][:5000])}'
                     if len(plugin_result['stdout']) > 5000:
                         plugin_html += '\n[OUTPUT TRUNCATED]'
                     plugin_html += '</div></div>'
             
             elif result.get('error'):
-                plugin_html += f'<div style="color: #e74c3c;"><strong>Error:</strong> {html.escape(result["error"])}</div>'
+                plugin_html += f'<div style="color: #e74c3c;"><strong>Error:</strong> {escape(result["error"])}</div>'
             
             plugin_html += f'<div style="margin-top: 10px; color: #7f8c8d;"><small>Execution Time: {duration:.2f} seconds</small></div>'
             plugin_html += '</div>'
@@ -511,7 +511,7 @@ class HtmlReportGenerator(ReportGenerator):
                 if value:
                     html_content += "<ul>"
                     for item in value[:20]:
-                        html_content += f"<li>{html.escape(str(item))}</li>"
+                        html_content += f"<li>{escape(str(item))}</li>"
                     if len(value) > 20:
                         html_content += f"<li><em>... and {len(value) - 20} more items</em></li>"
                     html_content += "</ul>"
@@ -520,10 +520,10 @@ class HtmlReportGenerator(ReportGenerator):
             elif isinstance(value, dict):
                 html_content += "<ul>"
                 for sub_key, sub_value in value.items():
-                    html_content += f"<li><strong>{sub_key}:</strong> {html.escape(str(sub_value))}</li>"
+                    html_content += f"<li><strong>{sub_key}:</strong> {escape(str(sub_value))}</li>"
                 html_content += "</ul>"
             else:
-                html_content += f"<p>{html.escape(str(value))}</p>"
+                html_content += f"<p>{escape(str(value))}</p>"
         
         return html_content
     
@@ -549,7 +549,7 @@ class HtmlReportGenerator(ReportGenerator):
                 
                 html_content += f"""
                 <div class="artifact-item">
-                    <strong>{html.escape(artifact.value)}</strong><br>
+                    <strong>{escape(artifact.value)}</strong><br>
                     <small>Source: {artifact.source_plugin} | Confidence: {artifact.confidence:.2f}</small>
                     <div class="tags">{tags_html}</div>
                 </div>

@@ -178,12 +178,30 @@ sudo apt install nmap theharvester sublist3r amass wafw00f whatweb nikto dirb ss
 # Many tools are also available via GitHub or pip
 ```
 
+### 🚀 Quick Start with Demo Mode
+If you want to test Detective Joe immediately without installing external tools:
+
+```bash
+# After setup, try the demo mode
+source .venv/bin/activate
+python3 detectivejoe.py -c website -t example.com -p demo
+```
+
+The demo profile uses basic system tools (curl, echo) to demonstrate the framework without requiring nmap or theharvester. This is perfect for:
+- ✅ Testing the framework functionality
+- ✅ Understanding the report generation
+- ✅ Learning the command structure
+- ✅ CI/CD environments
+
 ---
 
 ## ▶️ Usage
 
 ### CLI Mode (New in v1.5)
 ```bash
+# 🚀 Demo mode - works without external tools
+python3 detectivejoe.py -c website -t example.com -p demo
+
 # Website investigation using standard profile
 python3 detectivejoe.py -c website -t example.com
 
@@ -417,37 +435,44 @@ Tests cover:
 
 ## 🛣️ v1.5 Technical Vision & Implementation Status
 
-### ✅ Fully Implemented Features
+### 🏗️ Current Implementation Status
 
-**🔄 Core Framework**
-- Async execution framework with configurable worker pools ✓
-- Plugin architecture with auto-discovery from YAML manifests ✓
-- Profile-based configuration with advanced controls ✓
-- CLI and interactive modes with comprehensive argument parsing ✓
-- Multi-format report generation (TXT/HTML/JSON) ✓
-- Comprehensive test infrastructure with async support ✓
+**✅ Core Framework (Fully Functional)**
+- Async execution framework with configurable worker pools
+- Plugin architecture with auto-discovery from YAML manifests
+- Profile-based configuration with advanced controls
+- CLI and interactive modes with comprehensive argument parsing
+- Multi-format report generation (TXT/HTML/JSON)
+- Comprehensive test infrastructure with async support
 
-**🧠 Intelligence Engine**
-- Artifact extraction and management system ✓
-- Automatic deduplication with confidence scoring ✓
-- CVE enrichment and vulnerability tagging ✓
-- Persistent artifact database (JSON/binary) ✓
-- Artifact-based plugin chaining ✓
+**✅ Framework Components (Implemented)**
+- Artifact extraction and management system
+- Automatic deduplication with confidence scoring
+- Basic CVE pattern recognition in output
+- Persistent artifact database (JSON/binary)
+- State management with save/resume/kill functionality
+- Investigation persistence and recovery
+- Anonymity layer with TOR/proxy/User-Agent rotation
+- Plugin chaining based on artifact types
 
-**🔧 Advanced Features**
-- State management with save/resume/kill functionality ✓
-- Investigation persistence and recovery ✓
-- Anonymity layer with TOR/proxy/User-Agent rotation ✓
-- Configurable scan depth and aggressiveness ✓
-- Request timing randomization and delay controls ✓
+**⚠️ Plugin System (Requires External Tools)**
+- YAML-based plugin manifests with metadata ✅
+- Auto-discovery and dynamic loading ✅
+- Nmap plugin with intelligent command building ⚠️ *requires nmap installation*
+- theHarvester plugin with comprehensive parsing ⚠️ *requires theharvester installation*
+- Graceful handling of missing tools ✅
 
-**🧩 Plugin System**
-- YAML-based plugin manifests with metadata ✓
-- Auto-discovery and dynamic loading ✓
-- Nmap plugin with intelligent command building ✓
-- theHarvester plugin with comprehensive parsing ✓
-- Plugin chaining based on artifact types ✓
-- Graceful handling of missing tools ✓
+**📋 Dependencies Required for Full Functionality**
+Detective Joe's plugins require external reconnaissance tools to be installed:
+```bash
+# Ubuntu/Debian
+sudo apt install nmap
+
+# Install theHarvester
+pip install theHarvester
+# OR
+git clone https://github.com/laramies/theHarvester
+```
 
 ### Upcoming Releases
 

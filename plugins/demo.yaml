@@ -1,0 +1,13 @@
+name: "demo"
+version: "1.0"
+description: "Demo plugin for testing Detective Joe without external tools"
+tool_name: "demo"
+required_tools: ["echo", "curl"]
+categories: ["website", "organisation", "ip_server"]
+plugin_class: "DemoPlugin"
+module_path: "demo_plugin"
+artifacts:
+  produces: ["demo_info", "basic_connectivity"]
+  consumes: []
+chain_priority: 10
+tags: ["demo", "testing", "basic"]
